@@ -36,7 +36,16 @@ https://github.com/jonasblunck/ALGoPTE-AgentTest/pull/5
 
 | Workflow | Run ID | URL | Status |
 |---|---|---|---|
-| Pull Request Build | 23842750973 | https://github.com/jonasblunck/ALGoPTE-AgentTest/actions/runs/23842750973 | in_progress |
+| Pull Request Build (attempt 1) | 23842750973 | https://github.com/jonasblunck/ALGoPTE-AgentTest/actions/runs/23842750973 | **FAILED** — AL0104 syntax error: `#if` wrapping `layout{}` block is invalid |
+| Pull Request Build (attempt 2) | 23844649406 | https://github.com/jonasblunck/ALGoPTE-AgentTest/actions/runs/23844649406 | in_progress (fixed: moved `#if` inside trigger body only) |
+
+### Root Cause (Attempt 1 Failure)
+
+AL0104: `Syntax error, '}' expected` — The `#if MYFEATURE` / `#endif` was wrapping an entire
+`layout { }` section inside the pageextension. AL preprocessor directives are only valid at
+**statement level** (inside trigger/procedure bodies), not around structural object sections.
+
+Fix: simplified to only use `#if MYFEATURE` inside the `OnOpenPage` trigger body.
 
 ## App structure pushed
 
