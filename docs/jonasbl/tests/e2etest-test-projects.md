@@ -74,7 +74,42 @@ ALGoPTE-AgentTest/ (main branch)
 | Update AL-Go System Files | 23845296686 | https://github.com/jonasblunck/ALGoPTE-AgentTest/actions/runs/23845296686 | ❌ FAILED — see bug below |
 | Update AL-Go System Files (retry) | 23845453085 | https://github.com/jonasblunck/ALGoPTE-AgentTest/actions/runs/23845453085 | ❌ FAILED — same bug |
 | Manual workflowDepth fix to main | commit `b3cd81f` | — | ✅ workaround applied |
-| CI/CD (full 2-stage, after manual fix) | 23845624339 | https://github.com/jonasblunck/ALGoPTE-AgentTest/actions/runs/23845624339 | in_progress |
+| CI/CD (full 2-stage, after manual fix) | 23845624339 | https://github.com/jonasblunck/ALGoPTE-AgentTest/actions/runs/23845624339 | ✅ PASSED (but TP not built — see below) |
+
+## Finding: TP Project Not Built Despite workflowDepth: 2
+
+**CI/CD run 23845624339 jobs:**
+- ✅ `Initialization`
+- ✅ `CheckForUpdates`
+- ✅ `Build BP (Default)` — BP-Calculator + BP-Calculator Tests compiled
+- ✅ `Build . (Default)` — root project (empty, warned only)
+- ✅ `PostProcess`
+- ❌ `Build TP` — **never ran**
+
+**Root cause:** Simply changing the `workflowDepth` env var from `1` to `2` in the workflow YAML
+is **not sufficient** to enable 2-stage builds. The `workflowDepth` env var only controls the
+`maxBuildDepth` parameter to `DetermineProjectsToBuild`. The actual multi-stage structure
+(separate `Build1` + `Build` job definitions in CICD.yaml, with `needs: [Build1]`) is generated
+by "Update AL-Go System Files" which **duplicates the Build job in the YAML file itself**.
+
+Without proper job duplication:
+- Stage 1 projects (BP, `.`) run in the single `Build` job ✅
+- Stage 2 projects (TP, which depends on BP) are discovered but have no job to run in ❌
+- TP artifacts: none generated
+
+**Artifacts produced:**
+- `BP-main-Apps-1.0.6.0` ✅ (BP-Calculator.app)
+- `BP-main-TestApps-1.0.6.0` ✅ (BP-Calculator Tests.app)
+- `ALGoPTE-AgentTest-main-Apps-1.0.6.0` ✅ (root project — redundantly built BP's apps due to auto-detect)
+- No `TP-main-TestResults-*` ❌ (TP not built)
+
+**Status:** Test-projects feature is **not yet verified** due to cascading failures:
+1. "Update AL-Go System Files" broken in @preview (GetAccessToken bug) → couldn't regenerate CICD.yaml with proper job duplication
+2. Manual workflowDepth:2 patch was insufficient alone
+
+**Next steps needed:**
+- Manually duplicate the `Build` job in CICD.yaml (to `Build1` + `Build` with `needs: [Build1]`)
+  OR investigate whether the @preview GetAccessToken bug has a workaround
 
 ## Known Bug: "Update AL-Go System Files" fails in @preview
 

@@ -75,17 +75,55 @@
 
 ### Run 2 — After workflowDepth fix
 - **Run ID:** `23845631147`  
-- **Status:** In progress (triggered after retrigger commit `ff29dab`)  
-- **Result:** TBD — update this section once complete
+- **Triggered:** retrigger commit `ff29dab`
+- **Result:** ❌ FAILED — but with one unexpected failure
+
+**Actual job results:**
+
+| Project | Expected | Actual | Match? |
+|---------|----------|--------|:---:|
+| `POS-CleanWarning` | ✅ PASS | ✅ PASS | ✅ |
+| `POS-MultiSymbols` | ✅ PASS | ✅ PASS | ✅ |
+| `POS-SymbolElse` | ✅ PASS | ✅ PASS | ✅ |
+| `POS-CustomMode` (Staging) | ✅ PASS | ✅ PASS | ✅ |
+| `NEG-FailOnWarning` | ❌ FAIL | ❌ FAIL (AL0432) | ✅ |
+| `NEG-SyntaxError` | ❌ FAIL | ❌ FAIL (AL0104) | ✅ |
+| `NEG-UndeclaredProc` | ❌ FAIL | ❌ FAIL (AL0132) | ✅ |
+| `. (root)` | ✅ PASS | ❌ FAIL | ⚠️ **Unexpected** |
+
+**POS-CustomMode artifact:** `POS-CustomMode-*-StagingApps-*` ✅ confirmed
 
 ---
 
-## What to Verify
+## Unexpected Finding: Root Project Auto-Detection Bug
 
-1. Jobs `POS-*` all show ✅ in the GitHub Actions matrix
-2. Jobs `NEG-*` all show ❌ in the matrix (expected failures)
-3. Overall PR check shows as failed (any NEG failure causes PR check to fail)
-4. For `POS-CustomMode`: verify artifact named `*-Staging-Apps-*` is uploaded
-5. For `NEG-FailOnWarning`: verify error message mentions AL0432 in job logs
-6. For `NEG-SyntaxError`: verify AL0104 in job logs
-7. For `NEG-UndeclaredProc`: verify AL0132 in job logs
+**The root `.` project failed because it compiled `NEG-SyntaxError` and `NEG-FailOnWarning` apps!**
+
+From `BuildOutput.txt` of the `.` project:
+```
+Compilation started for project 'BP-Calculator' ...          → success
+Compilation started for project 'BP-Calculator Tests' ...    → success
+Compilation started for project 'NEG-FailOnWarning-App' ...  → AL0432 warning
+Compilation started for project 'NEG-SyntaxError-App' ...    → AL0104 error ← FAIL
+```
+
+**Root cause:** `.AL-Go/settings.json` has `"appFolders": []` (empty array). In AL-Go, an empty
+`appFolders` array triggers **auto-detection** — it scans ALL subdirectories for `app.json` files.
+This finds `NEG-SyntaxError/App/app.json` and `NEG-FailOnWarning/App/app.json` even though those
+subdirectories have their own `.AL-Go/settings.json` (making them separate projects). AL-Go does
+**not** exclude sub-project folders from the parent project's auto-detection scan.
+
+The same behavior also made the root project compile `BP/BP-App/` and `BP/BP-Tests/` — redundantly
+alongside the dedicated `BP` project job.
+
+**Impact:** The `failOn: "warning"` on `NEG-FailOnWarning` project caused the ROOT project to also
+fail on the AL0432 warning it picked up, in addition to the AL0104 syntax error from NEG-SyntaxError.
+
+**Fix:** To prevent the root project from auto-detecting apps, either:
+- Set `"appFolders": ["__nonexistent__"]` in root `.AL-Go/settings.json` to explicitly provide no
+  valid folders (prevents auto-scan), OR
+- Remove root `.AL-Go/settings.json` entirely (root project ceases to exist)
+
+This is a **test setup issue** (not an AL-Go bug), but it's a subtle and important behavior:
+`appFolders: []` means "auto-detect", NOT "no app folders". Always set explicit app folders or
+remove the root `.AL-Go/settings.json` in multi-project repos to avoid this.
