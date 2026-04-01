@@ -74,7 +74,24 @@ ALGoPTE-AgentTest/ (main branch)
 | Update AL-Go System Files | 23845296686 | https://github.com/jonasblunck/ALGoPTE-AgentTest/actions/runs/23845296686 | ❌ FAILED — see bug below |
 | Update AL-Go System Files (retry) | 23845453085 | https://github.com/jonasblunck/ALGoPTE-AgentTest/actions/runs/23845453085 | ❌ FAILED — same bug |
 | Manual workflowDepth fix to main | commit `b3cd81f` | — | ✅ workaround applied |
-| CI/CD (full 2-stage, after manual fix) | 23845624339 | https://github.com/jonasblunck/ALGoPTE-AgentTest/actions/runs/23845624339 | ✅ PASSED (but TP not built — see below) |
+| Update AL-Go System Files (manual, by user) | 23847237281 | https://github.com/jonasblunck/ALGoPTE-AgentTest/actions/runs/23847237281 | ✅ SUCCESS |
+| CI/CD (2-stage with Build1+Build, triggered by Update) | 23847314972 | https://github.com/jonasblunck/ALGoPTE-AgentTest/actions/runs/23847314972 | in_progress |
+
+## Finding: Manual Run of Update AL-Go System Files Succeeded
+
+The user ran "Update AL-Go System Files" manually via the GitHub UI — this succeeded (run `23847237281`).
+The failure in runs `23845296686` and `23845453085` may have been due to token differences: manual
+dispatch may have used a different OAuth flow than API-triggered dispatch.
+
+**What the update committed to main:**
+- `CICD.yaml`: `workflowDepth: 2`, `Build1` job (stage 1) + `Build` job (stage 2, `needs: [Build1]`)
+- `PullRequestHandler.yaml`: same 2-stage structure
+- The `Build` (stage 2) job has condition: only runs if `buildOrderJson[1].projectsCount > 0`
+
+**CI/CD run `23847314972`** (in progress — triggered automatically after the commit):
+This is the first run with proper 2-stage CICD structure. Expected behavior:
+- `Build1`: runs BP and `.` (stage 1) → produces `BP-main-Apps-*` and `BP-main-TestApps-*`
+- `Build`: runs TP (stage 2, needs Build1) → installs BP apps, runs tests, produces `TP-main-TestResults-*`
 
 ## Finding: TP Project Not Built Despite workflowDepth: 2
 
