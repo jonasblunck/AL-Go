@@ -2,7 +2,8 @@
 
 ## What is being tested
 
-The `workspaceCompilation` feature introduced in AL-Go preview (requires BC v28 ALTool).
+The `workspaceCompilation` feature introduced in AL-Go preview. Requires a **nextmajor** BC
+artifact because the `altool workspace create/compile` subcommand was not available in BC 23.
 
 Instead of compiling apps one-by-one in dependency order (sequential), the ALTool's
 `workspace compile` command receives all app folders at once, computes the full dependency
@@ -11,6 +12,7 @@ graph internally, and compiles apps **in parallel** wherever the graph allows.
 Key settings under test:
 - `workspaceCompilation.enabled: true` — activates the new compilation path
 - `workspaceCompilation.parallelism: -1` — use all available CPUs
+- `artifact: "////nextmajor"` — required to get an ALTool that supports workspace commands
 - `doNotPublishApps: true` — compile-only, no BC container needed (fast)
 
 The compilation pipeline is:
@@ -65,9 +67,15 @@ https://github.com/jonasblunck/ALGoPTE-AgentTest/pull/2
 
 ## Triggered workflows
 
-| Workflow | Run ID | URL | Status at trigger time |
+| Workflow | Run ID | URL | Status |
 |---|---|---|---|
-| Pull Request Build | 23842022000 | https://github.com/jonasblunck/ALGoPTE-AgentTest/actions/runs/23842022000 | in_progress |
+| Pull Request Build (attempt 1) | 23842022000 | https://github.com/jonasblunck/ALGoPTE-AgentTest/actions/runs/23842022000 | **FAILED** — `altool workspace` not supported in BC23 |
+| Pull Request Build (attempt 2) | 23842653968 | https://github.com/jonasblunck/ALGoPTE-AgentTest/actions/runs/23842653968 | in_progress (fixed: added `artifact: "////nextmajor"`) |
+
+### Root Cause (Attempt 1 Failure)
+
+Error: `Verb 'workspace' is not recognized.`  
+The BC23 `altool.exe` (downloaded because `application` dependency = `"23.0.0.0"`) does not support the `workspace create` subcommand needed for workspace compilation. The fix adds `"artifact": "////nextmajor"` to ensure the latest BC compiler is used.
 
 ## App structure pushed
 
