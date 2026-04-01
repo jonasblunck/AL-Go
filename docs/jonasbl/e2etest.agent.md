@@ -13,7 +13,7 @@ read logs and artifacts, and verify functionality — all against a single dedic
 |---|---|
 | Test repository | `jonasblunck/ALGoPTE-AgentTest` (private, github.com) |
 | AL-Go repo (this repo) | `jonasblunck/AL-Go` — where test docs are stored |
-| AL-Go template | `https://github.com/microsoft/AL-Go-PTE@main` |
+| AL-Go template | `https://github.com/microsoft/AL-Go-PTE@preview` |
 | Repo type | PTE (Per-Tenant Extension) |
 | Default branch | `main` — **never push directly to main** |
 | GitHub auth | `gh --hostname github.com` (logged in as `jonasblunck`) |
