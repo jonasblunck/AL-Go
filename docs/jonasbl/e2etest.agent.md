@@ -12,18 +12,18 @@ read logs and artifacts, and verify functionality — all against a single dedic
 | Item | Value |
 |---|---|
 | Test repository | `jonasblunck/ALGoPTE-AgentTest` (private, github.com) |
+| AL-Go repo (this repo) | `jonasblunck/AL-Go` — where test docs are stored |
 | AL-Go template | `https://github.com/microsoft/AL-Go-PTE@main` |
 | Repo type | PTE (Per-Tenant Extension) |
 | Default branch | `main` — **never push directly to main** |
 | GitHub auth | `gh --hostname github.com` (logged in as `jonasblunck`) |
-| AL-Go system files | Already installed in repo (v8.3 workflows, 20 active) |
+| AL-Go system files | Already installed (v8.3 workflows, 20 active) |
 
 ### Authentication
 
 All `gh` and `git` operations targeting github.com must use:
 ```bash
-gh --hostname github.com ...          # gh CLI API calls
-GH_HOST=github.com gh ...             # alternative prefix
+gh --hostname github.com ...
 ```
 
 To get a token for git push auth:
@@ -36,17 +36,19 @@ git remote set-url origin "https://jonasblunck:${TOKEN}@github.com/jonasblunck/A
 
 ## Branch Strategy
 
-Each test scenario uses a **dedicated feature branch** that is cleaned up after the test.
+Each test scenario gets its **own permanent branch** in `ALGoPTE-AgentTest` so runs and
+results can be revisited at any time. Branches are **never deleted** after testing.
 
-| Phase | Action |
+| Branch name pattern | Purpose |
 |---|---|
-| Setup | Create `feature/test-<scenario>-<YYYYMMDD-HHMMSS>` from `main` |
-| Test | Push commits to branch; CI/CD triggers automatically |
-| Verify | Check workflow runs, artifacts, logs |
-| Cleanup | Delete branch (`gh --hostname github.com api --method DELETE /repos/jonasblunck/ALGoPTE-AgentTest/git/refs/heads/<branch>`) |
+| `private/jonasbl/test-<scenario>-<YYYYMMDD-HHMMSS>` | One branch per test run |
 
-CI/CD triggers automatically on branches matching `feature/*`, `release/*`, or `main`.
-For other branch names, use workflow_dispatch manually.
+The **Pull Request Build** workflow (`PullRequestHandler.yaml`) is the primary validation
+workflow. It triggers automatically when a PR is opened targeting `main`. It covers
+compilation, publishing, and test execution.
+
+> **Do NOT wait for workflows to complete.** Fire and forget: push the branch, open the PR,
+> record the run ID, then move on. Multiple tests can run in parallel this way.
 
 ---
 
@@ -271,7 +273,7 @@ For every test scenario, follow these steps:
 ```bash
 cd /tmp
 rm -rf algotest
-gh --hostname github.com repo clone jonasblunck/ALGoPTE-AgentTest algotest
+GH_HOST=github.com gh repo clone jonasblunck/ALGoPTE-AgentTest algotest
 cd algotest
 TOKEN=$(gh --hostname github.com auth token)
 git remote set-url origin "https://jonasblunck:${TOKEN}@github.com/jonasblunck/ALGoPTE-AgentTest.git"
