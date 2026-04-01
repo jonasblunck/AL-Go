@@ -47,9 +47,24 @@ MyApp.Test/
   testFolders: ["MyApp.Test"]
 ```
 
+## Result
+
+✅ **PASSED** — completed at 2026-04-01T09:12:29Z (~24 min total, container pipeline)
+
+All jobs succeeded:
+- Initialization ✅
+- Build . (Default) ✅
+- Pull Request Status Check ✅
+
+Artifacts confirmed:
+- `Apps` (MyApp compiled) ✅
+- `TestApps` (MyApp.Test compiled) ✅
+- `TestResults` (AL tests ran and produced results) ✅
+- `BuildOutput` ✅
+
 ## Notes
 
-- First real test run through the agent instructions.
-- Verifying the full instructions flow: clone → branch → app files → PR → run ID capture → doc.
-- No `doNotPublishApps` or `useCompilerFolder` set, so full BC container pipeline runs.
-- Expected to be slow (15–30 min) due to container spin-up on GitHub-hosted runner.
+- First real test run through the agent instructions — full flow worked end-to-end.
+- No `doNotPublishApps` or `useCompilerFolder` set, so full BC container pipeline ran.
+- Took ~24 minutes (container spin-up on GitHub-hosted runner).
+- Note: run was on AL-Go v8.3 (repo was updated to @preview *after* this PR was opened).
